@@ -1,6 +1,8 @@
 package ffnn;
 
-public class Connection {
+import java.io.Serializable;
+
+public class Connection implements Serializable {
 	Neuron from;	
 	Neuron to;
 	double weight;

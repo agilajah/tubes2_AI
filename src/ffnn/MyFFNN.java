@@ -1,14 +1,16 @@
 package ffnn;
 
-import java.util.ArrayList;
+import java.util.Random;
 
 import weka.classifiers.AbstractClassifier;
+import weka.classifiers.Evaluation;
+import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 
 public class MyFFNN extends AbstractClassifier {
-		
+	
 	// Attributes
 	Neuron inputLayer[];			// input layer
 	Neuron hiddenLayers[][];		// hidden layers
@@ -75,7 +77,7 @@ public class MyFFNN extends AbstractClassifier {
 	
 	
 	// Feed an instance to the network
-	public double feedForward(double[] instance) {
+	public double[] feedForward(double[] instance) {
 		// Feed the input layer
 		for(int i=0; i<inputLayer.length-1; i++) {
 			inputLayer[i].setOutput(instance[i]);
@@ -95,58 +97,95 @@ public class MyFFNN extends AbstractClassifier {
 			result[i] = outputLayer[i].getOutput();
 		}
 		
-		return result[0];
+		return result;
 	}
 	
-	public double train(double[] inputs, double answer) {
-		double result = feedForward(inputs);
+//	public double train(double[] inputs, double answer) {
+//		double result = feedForward(inputs);
+//		
+//		double deltaOutput = result*(1-result) * (answer-result);
+//		
+//		ArrayList connections = outputLayer[0].getConnections();
+//        for (int i = 0; i < connections.size(); i++) {
+//            Connection c = (Connection) connections.get(i);
+//            Neuron neuron = c.getFrom();
+//            double output = neuron.getOutput();
+//            double deltaWeight = output*deltaOutput;
+//            c.adjustWeight(learningRate*deltaWeight);
+//        }
+//        
+//        // ADJUST HIDDEN WEIGHTS
+//        for(int i=0; i<hiddenLayers.length; i++) {
+//        	 for (int j = 0; j < hiddenLayers[i].length; j++) {
+//                 connections = hiddenLayers[i][j].getConnections();
+//                 double sum  = 0;
+//                 // Sum output delta * hidden layer connections (just one output)
+//                 for (int k = 0; k < connections.size(); k++) {
+//                     Connection c = (Connection) connections.get(k);
+//                     // Is this a connection from hidden layer to next layer (output)?
+//                     if (c.getFrom() == hiddenLayers[i][j]) {
+//                         sum += c.getWeight()*deltaOutput;
+//                     }
+//                 }    
+//                 // Then adjust the weights coming in based:
+//                 // Above sum * derivative of sigmoid output function for hidden neurons
+//                 for (int k = 0; k < connections.size(); k++) {
+//                     Connection c = (Connection) connections.get(k);
+//                     // Is this a connection from previous layer (input) to hidden layer?
+//                     if (c.getTo() == hiddenLayers[i][j]) {
+//                         double output = hiddenLayers[i][j].getOutput();
+//                         double deltaHidden = output * (1 - output);  // Derivative of sigmoid(x)
+//                         deltaHidden *= sum;   // Would sum for all outputs if more than one output
+//                         Neuron neuron = c.getFrom();
+//                         double deltaWeight = neuron.getOutput()*deltaHidden;
+//                         c.adjustWeight(learningRate*deltaWeight);
+//                     }
+//                 } 
+//             }
+//        }
+//       
+//        return result;
+//	}
+	
+	@Override
+	public double[] distributionForInstance(Instance instance) throws Exception {
+
+	    // since all the output values are needed.
+	    // They are calculated manually here and the values collected.
+	    int numClasses = instance.numClasses();
+	    double[] out = new double[numClasses];
+	    
+	    int class_index = instance.classIndex();
+		int num_attributes = instance.numAttributes();
+		double inputs[] = new double[num_attributes];
 		
-		double deltaOutput = result*(1-result) * (answer-result);
+		for(int i=0, j=0; i<num_attributes; i++) {
+			if(i != class_index) {
+				inputs[j++] = instance.value(i);
+			}
+		}
 		
-		ArrayList connections = outputLayer[0].getConnections();
-        for (int i = 0; i < connections.size(); i++) {
-            Connection c = (Connection) connections.get(i);
-            Neuron neuron = c.getFrom();
-            double output = neuron.getOutput();
-            double deltaWeight = output*deltaOutput;
-            c.adjustWeight(learningRate*deltaWeight);
-        }
-        
-        // ADJUST HIDDEN WEIGHTS
-        for(int i=0; i<hiddenLayers.length; i++) {
-        	 for (int j = 0; j < hiddenLayers[i].length; j++) {
-                 connections = hiddenLayers[i][j].getConnections();
-                 double sum  = 0;
-                 // Sum output delta * hidden layer connections (just one output)
-                 for (int k = 0; k < connections.size(); k++) {
-                     Connection c = (Connection) connections.get(k);
-                     // Is this a connection from hidden layer to next layer (output)?
-                     if (c.getFrom() == hiddenLayers[i][j]) {
-                         sum += c.getWeight()*deltaOutput;
-                     }
-                 }    
-                 // Then adjust the weights coming in based:
-                 // Above sum * derivative of sigmoid output function for hidden neurons
-                 for (int k = 0; k < connections.size(); k++) {
-                     Connection c = (Connection) connections.get(k);
-                     // Is this a connection from previous layer (input) to hidden layer?
-                     if (c.getTo() == hiddenLayers[i][j]) {
-                         double output = hiddenLayers[i][j].getOutput();
-                         double deltaHidden = output * (1 - output);  // Derivative of sigmoid(x)
-                         deltaHidden *= sum;   // Would sum for all outputs if more than one output
-                         Neuron neuron = c.getFrom();
-                         double deltaWeight = neuron.getOutput()*deltaHidden;
-                         c.adjustWeight(learningRate*deltaWeight);
-                     }
-                 } 
-             }
-        }
-       
-        return result;
-	}
+	    out = this.feedForward(inputs);
+	    
+	    if (instance.classAttribute().type() == Attribute.NUMERIC) {
+	    	return out;
+	    }
+
+	    // now normalize the array
+	    double count = 0;
+	    for (int i = 0; i < numClasses; i++) {
+	    	count += out[i];
+	    }
+	    
+	    for (int i = 0; i < numClasses; i++) {
+	      out[i] /= count;
+	    }
+	    
+	    return out;
+	  }
 	
 	public static void main(String args[]) {
-		String arff = "main/iris.arff";
+		String arff = "ffnn/iris.arff";
 		System.out.println("> Loading instances: " + arff + "\n");
 		Instances instances = null;
 		try {
@@ -170,6 +209,11 @@ public class MyFFNN extends AbstractClassifier {
 		MyFFNN ffnn = new MyFFNN(nInputNeuron, nHiddenLayer, nHiddenNeuron, nOutputNeuron, learningRate);
 		try {
 			ffnn.buildClassifier(instances);
+			Evaluation eval = new Evaluation(instances);
+			eval.evaluateModel(ffnn, instances);
+			eval.crossValidateModel(ffnn, instances, 10, new Random(1));
+			System.out.println(eval.errorRate()); // Printing Training Mean root squared error
+			System.out.println(eval.toSummaryString());		// Summary of Training
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -190,9 +234,7 @@ public class MyFFNN extends AbstractClassifier {
 				inputs[j++] = inst.value(i);
 			}
 		}		
-		
-		double result = train(inputs, 1);
-		System.out.println(result);
+				
 	}
 	
 }

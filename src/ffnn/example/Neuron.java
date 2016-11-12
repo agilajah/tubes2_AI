@@ -5,7 +5,7 @@
 //Generic Neuron Class
 //Can be a bias neuron (true or false)
 
-package nn;
+package ffnn.example;
 
 import java.util.ArrayList;
 

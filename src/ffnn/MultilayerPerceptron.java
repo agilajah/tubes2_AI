@@ -18,7 +18,7 @@
  *    Copyright (C) 2000-2012 University of Waikato, Hamilton, New Zealand
  */
 
-package main;
+package ffnn;
 
 import java.awt.BorderLayout;
 import java.awt.Color;

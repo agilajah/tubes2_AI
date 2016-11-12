@@ -4,7 +4,7 @@
 
 // Class to describe a connection between two neurons
 
-package nn;
+package ffnn.example;
 
 public class Connection {
 

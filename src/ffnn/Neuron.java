@@ -1,8 +1,10 @@
 package ffnn;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Neuron {
+public class Neuron implements Serializable {
+	
 	double output;				// output value
 	ArrayList connections;		// neuron's connections
 	

@@ -5,7 +5,7 @@
 // Hidden Neuron Class
 // So far not necessary to differentiate these
 
-package nn;
+package ffnn.example;
 
 public class HiddenNeuron extends Neuron {
     

@@ -5,7 +5,7 @@
 // Input Neuron Class
 // Has additional functionality to receive beginning input
 
-package nn;
+package ffnn.example;
 
 public class InputNeuron extends Neuron {
     public InputNeuron() {

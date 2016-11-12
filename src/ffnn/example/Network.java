@@ -11,7 +11,7 @@
 // Also need to build in a "Layer" class so that there can easily
 // be more than one hidden layer
 
-package nn;
+package ffnn.example;
 
 import java.util.ArrayList;
 
