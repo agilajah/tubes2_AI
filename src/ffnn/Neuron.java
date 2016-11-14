@@ -7,6 +7,7 @@ public class Neuron implements Serializable {
 	
 	double output;				// output value
 	ArrayList connections;		// neuron's connections
+	private double deltaOutput = 0;
 	
 	Neuron() {
 		output = 0;
@@ -51,5 +52,13 @@ public class Neuron implements Serializable {
 
 	public ArrayList getConnections() {
 		return connections;
+	}
+
+	public void setDeltaOutput(double d) {
+		this.deltaOutput  = d;		
+	}
+
+	public double getDeltaOutput() {
+		return this.deltaOutput;
 	}
 }
