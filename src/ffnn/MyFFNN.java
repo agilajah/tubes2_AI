@@ -9,20 +9,40 @@ import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Normalize;
 
+/**
+ * 
+ * Class MyFFNN
+ * This class is a classifier that implements Feed Forward Neural Network.
+ *
+ */
 public class MyFFNN extends AbstractClassifier {
 	
 	// Attributes
-	Neuron inputLayer[];			// input layer
-	Neuron hiddenLayers[][];		// hidden layers
-	Neuron outputLayer[];			// output layer
+	Neuron inputLayer[];		// input layer
+	Neuron hiddenLayers[][];	// hidden layers
+	Neuron outputLayer[];		// output layer
 	
 	double learningRate;		// learning rate
-	int counterEpoch = 0;
-	int epoch;
-	double minErrorRate;
+	int epoch;					// maximum epoch 
+	int counterEpoch = 0;		// epoch counter 
+	double minErrorRate;		// minimum error rate (calculated using full training)
+	boolean isNormalized = false;	
 	
-	// Constructor
+	
+	/**
+	 * Constructor
+	 * 
+	 * @param nInputNeuron		number of input neurons
+	 * @param nHiddenLayer		number of hidden layer
+	 * @param nHiddenNeuron		number of hidden neurons in each hidden layer
+	 * @param nOutputNeuron		number of output neurons
+	 * @param learningRate		learning rate
+	 * @param epoch				maximum epoch
+	 * @param minErrorRate		minimum error rate
+	 */
 	MyFFNN(int nInputNeuron, int nHiddenLayer, int nHiddenNeuron, int nOutputNeuron, double learningRate, int epoch, double minErrorRate) {
 		this.learningRate = learningRate;
 		this.epoch = epoch;
@@ -81,11 +101,51 @@ public class MyFFNN extends AbstractClassifier {
 		}
 	}
 	
+	/**
+	 * @return string of attributes of MyFFNN class
+	 */
+	public String toString() {
+		return "Learning rate: "+this.learningRate+"\n"
+				+"Min error rate: "+this.minErrorRate+"\n"
+				+"Input neuron: "+this.inputLayer.length+"\n"
+				+"Hidden neuron: "+this.hiddenLayers.length+" x "+this.hiddenLayers[0].length+" (plus bias)\n"
+				+"Output neuron: "+this.outputLayer.length+"\n";
+				
+	}
+		
+	/**
+	 * Getter for epoch
+	 * 
+	 * @return epoch
+	 */
 	public int getEpoch() {
-		return this.epoch;
+		return this.counterEpoch;
 	}	
 	
-	// Feed an instance to the network
+	/**
+	 * Normalize the instances
+	 * 
+	 * @param instances
+	 * @return normalized instances
+	 */
+	public Instances normalize(Instances instances) {
+		try {
+			Normalize filter = new Normalize();
+			filter.setInputFormat(instances);
+			instances = Filter.useFilter(instances, filter);
+			this.isNormalized = true;
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+		return instances;
+	}
+	
+	/**
+	 * Feedforward a single instance. 
+	 * 
+	 * @param instance 	input instance
+	 * @return distributions for each class 
+	 */
 	public double[] feedForward(double[] instance) {
 		// Feed the input layer
 		for(int i=0; i<inputLayer.length-1; i++) {
@@ -109,37 +169,54 @@ public class MyFFNN extends AbstractClassifier {
 		return result;
 	}
 	
-	public double[] train(double[] instance, double d) throws Exception {
-		// Hitung output dari instance
+	/**
+	 * @param instance
+	 * @param answer
+	 * @param type
+	 * @return
+	 * @throws Exception
+	 */
+	public double[] train(double[] instance, double answer, int type) throws Exception {
+		// feedforward the instance
 		double[] result = feedForward(instance);
 		
-		// Tentukan output maksimal 
-		int iMax = 0;
-		double max = 0;
-		for(int i=0; i < result.length; i++) {
-			if(result[i] > max) {
-				iMax = i;
-				max = result[i];
-			}
-		}
-		
 		boolean guessTrue = false;
-		if(iMax == (int) d) {
-			guessTrue = true;
-//			System.out.println("sama");
-		}
-		
-		// Buat array baru untuk answer
-		double[] answers = new double[result.length];
-		for(int i=0; i < answers.length; i++) {
-			if(i == (int)d) {
-				answers[i] = 1;
+		double[] answers;
+		if (type == Attribute.NUMERIC) {
+			// if the output is numeric
+			// still buggy
+	    	guessTrue = result[0] == answer;
+	    	answers = result;
+	    }
+		else {
+			// if the output is a class 
+			// find the maximum distribution
+			int iMax = 0;
+			double max = 0;
+			for(int i=0; i < result.length; i++) {
+				if(result[i] > max) {
+					iMax = i;
+					max = result[i];
+				}
 			}
-			else {
-				answers[i] = 0;
+			
+			// check if the guess is true 
+			if(iMax == (int) answer) {
+				guessTrue = true;
 			}
-		}
-		
+			
+			// create new array for calculating output
+			answers = new double[result.length];
+			for(int i=0; i < answers.length; i++) {
+				if(i == (int)answer) {
+					answers[i] = 1;
+				}
+				else {
+					answers[i] = 0;
+				}
+			}
+		}	
+				
 		// BACKPROPOGATION
         // Apply Delta to connections between hidden and output
 		double[] deltaOutput = new double[result.length];
@@ -150,10 +227,8 @@ public class MyFFNN extends AbstractClassifier {
 				deltaOutput[i] = 0;
 			}
 			else {
-				deltaOutput[i] = result[i]*(1-result[i]) * (answers[i]-result[i]);	
-//				System.out.print(deltaOutput[i]+" *** ");
+				deltaOutput[i] = result[i]*(1-result[i]) * (answers[i]-result[i]);
 			}
-//			System.out.println(deltaOutput[i]);
 			outputLayer[i].setDeltaOutput(deltaOutput[i]);
 			
 			ArrayList connections = outputLayer[i].getConnections();
@@ -199,6 +274,9 @@ public class MyFFNN extends AbstractClassifier {
         return result;
 	}
 	
+	/* (non-Javadoc)
+	 * @see weka.classifiers.AbstractClassifier#distributionForInstance(weka.core.Instance)
+	 */
 	@Override
 	public double[] distributionForInstance(Instance instance) throws Exception {
 
@@ -236,8 +314,14 @@ public class MyFFNN extends AbstractClassifier {
 	    return out;
 	  }
 	
+	/* (non-Javadoc)
+	 * @see weka.classifiers.Classifier#buildClassifier(weka.core.Instances)
+	 */
 	@Override
 	public void buildClassifier(Instances instances) throws Exception {
+		if(!this.isNormalized) {
+			instances = this.normalize(instances);
+		}
 		int class_index = instances.classIndex();
 		int num_attributes = instances.numAttributes();
 				
@@ -247,25 +331,31 @@ public class MyFFNN extends AbstractClassifier {
 			for(int k=0, j=0; k<num_attributes; k++) {
 				if(k != class_index) {
 					inputs[j++] = instances.get(i).value(k);
-//					System.out.print(instances.get(i).value(k)+" ");
 				}
 			}	
-			
-			double[] result = this.train(inputs, instances.get(i).classValue());
-
+					
+			double[] result = this.train(inputs, instances.get(i).classValue(), instances.get(i).classAttribute().type());			
 		}
+		
 		counterEpoch++;
 		Evaluation eval = new Evaluation(instances);
 		eval.evaluateModel(this, instances);
+//		eval.crossValidateModel(this, instances, 2, new Random(1));
+		
 		if(eval.errorRate() > this.minErrorRate && counterEpoch < this.epoch) {
 			this.buildClassifier(instances);
 		}
 	}
 	
 	
+	/**
+	 * Main program
+	 * 
+	 * @param args
+	 */
 	public static void main(String args[]) {
 		// Read arff file
-		String arff = "main/iris.arff";
+		String arff = "ffnn/Team.arff";
 		System.out.println("> Loading instances: " + arff + "\n");
 		Instances instances = null;
 		try {
@@ -273,36 +363,40 @@ public class MyFFNN extends AbstractClassifier {
 			instances = source.getDataSet();
 			if(instances.classIndex() == -1) {
 				instances.setClassIndex(instances.numAttributes() - 1);
-			}				
+//				instances.setClassIndex(0);
+			}
 			System.out.println("Loaded instances: " + arff + "\n");
-		} catch (Exception e) {
+		} catch (Exception  e) {
 			System.out.println("Problem loading instances: " + arff+ "\n");
 		}
-				
+//		System.out.println(instances.toSummaryString());
 		
 		int nInputNeuron = instances.numAttributes()-1;
 		int nHiddenLayer = 1;
-		int nHiddenNeuron = 4;
+		int nHiddenNeuron = 15;
 		int nOutputNeuron = instances.numClasses();
-		double learningRate = 0.25;
-		int epoch = 10000;
-		double minErrorRate = 0.01;
+		double learningRate = 0.3;
+		int epoch = 5000;
+		double minErrorRate = 0.10;
 		
 		MyFFNN ffnn = new MyFFNN(nInputNeuron, nHiddenLayer, nHiddenNeuron, nOutputNeuron, learningRate, epoch, minErrorRate);
+		instances = ffnn.normalize(instances);
+		System.out.println(ffnn.toString());
 		try {
 			ffnn.buildClassifier(instances);
-			Evaluation eval = new Evaluation(instances);
 			
+			Evaluation eval = new Evaluation(instances);			
 			eval.evaluateModel(ffnn, instances);
 //			eval.crossValidateModel(ffnn, instances, 10, new Random(1));
 			
 			System.out.println(eval.toSummaryString());		// Summary of Training
 			System.out.println(eval.toMatrixString());
 			
-			System.out.println("Error rate: "+eval.errorRate()); // Printing Training Mean root squared error
+			System.out.println("Error rate: "+eval.errorRate()*100+" %"); // Printing Training Mean root squared error
+			System.out.println("Accuracy: "+(1-eval.errorRate())*100+" %");
 			System.out.println("Epoch: "+ffnn.getEpoch());
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
+		}		
 	}
 }

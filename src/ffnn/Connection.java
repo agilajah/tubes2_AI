@@ -10,6 +10,7 @@ public class Connection implements Serializable {
 	Connection(Neuron from, Neuron to) {
 		this.from = from;
 		this.to = to;
+//		this.weight = 0.1;	// random weight
 		this.weight = (double) Math.random()*2-1;	// random weight
 	}
 
@@ -26,6 +27,7 @@ public class Connection implements Serializable {
 	}
 
 	public void adjustWeight(double deltaWeight) {
+//		System.out.println("Updating");
 		this.weight += deltaWeight;		
 	}
 }
