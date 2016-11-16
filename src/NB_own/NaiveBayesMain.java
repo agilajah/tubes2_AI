@@ -77,7 +77,8 @@ public class NaiveBayesMain {
         System.out.println("8. " + instance.numInstances());
         System.out.println("9. " + instance.attribute(instance.numAttributes()-1).numValues());
         System.out.println("10. " + instance.get(120).stringValue(instance.numAttributes()-1));
-        System.out.println("11. " + instance.attribute(instance.numAttributes()-1).value(0));
+        System.out.println("11. " + instance.attribute(instance.numAttributes()-1).value(2));
+        System.out.println("11. " + instance.attribute(0));
         
     }
 }

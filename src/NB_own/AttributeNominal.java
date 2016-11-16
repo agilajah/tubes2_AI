@@ -26,12 +26,12 @@ public class AttributeNominal {
         return atribut;
     }
     
-    public void setAtribut(int nDataDifferent, int nConclusion, Object data){
+    public void setAtribut(int nDataDifferent, int nConclusion, Double data){
         atribut[nDataDifferent][nConclusion] = data;
     }
     
-    public Object getAttribObjectType(int i){
-        return atribut[i];
+    public Object getAttribObjectType(int nDataDifferent, int nConclusion){
+        return atribut[nDataDifferent][nConclusion];
     }
     
     public void setCountAtribut(int nDataDifferent, int nConclusion, int value) {
