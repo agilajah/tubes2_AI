@@ -31,7 +31,7 @@ public class InputNaiveBayes {
             if(instance.classIndex() == -1) {
                 instance.setClassIndex(instance.numAttributes() - 1);
             }
-            System.out.println("Congrats ! file " + pathFile + " has been loaded");
+            System.out.println("file " + pathFile + " has been loaded");
         }catch (Exception e) {
             System.out.println("There is a problem when reading .arff file : " + e);
         }

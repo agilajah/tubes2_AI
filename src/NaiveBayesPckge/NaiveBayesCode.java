@@ -5,6 +5,8 @@
  */
 package NaiveBayesPckge;
 
+import java.text.DecimalFormat;
+
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Evaluation;
 import weka.core.Instance;
@@ -19,20 +21,26 @@ public class NaiveBayesCode extends AbstractClassifier {
     private int countConclusion[];
     private float [] probabConclusion;
     private Instances instanceCopy;
+    private double minErrorRate;
+    private static int maxIterasi;
     
     /**
      * Constructor with default value 10
      */
     public NaiveBayesCode() {
         atribNom = new AttributeNominal[10];
+        this.minErrorRate = 0.1;
+        maxIterasi = 0;
     }
 
     /**
      * Constructor set array with the value of n
      * @param n 
      */
-    public NaiveBayesCode(int n) {
+    public NaiveBayesCode(int n, double minErrorRate) {
         atribNom = new AttributeNominal[n];
+        this.minErrorRate = minErrorRate;
+        maxIterasi = 0;
     }
     
     /**
@@ -102,16 +110,25 @@ public class NaiveBayesCode extends AbstractClassifier {
      * @param IndexAtrbt indeks dari atribut yang akan dicetak
      * @param indexConclusion indeks dari label kesimpulan yang akan dicetak
      */
-    public void printFrequencyEachValueOfAtributByIndex(Instances instance, int IndexAtrbt, int indexConclusion) {
-        
-        System.out.println("\nPrint for conclusion : " + instance
-                .attribute(instance.numAttributes()-1).value(indexConclusion) + 
-                "\natribut : " + instance.attribute(IndexAtrbt).name());
-        
-        for (int j=0;j<instance.attribute(IndexAtrbt).numValues();j++){
-            System.out.println(j + ". "
-                    + instance.attribute(IndexAtrbt).value(j)+" = "
-                    + atribNom[IndexAtrbt].getCountAtribut(j,indexConclusion));
+    public void printFrequencyEachValueOfAtributByIndex(Instances instance) {
+        System.out.println("\n###\nPrint frequency Each value of attribut :\n");
+        for (int i=0;i<instance.numAttributes();i++){
+            System.out.println("(" + (i+1) + "). Attribut : " + instance.attribute(i).name());
+            for (int j=0;j<instance.attribute(i).numValues();j++){
+                System.out.print((j+1) + ". "
+                        + instance.attribute(i).value(j)+" =");
+                for (int k=0;k<instance.attribute(instance.numAttributes()-1).numValues();k++) {
+                    if (i==instance.numAttributes()-1)
+                        System.out.print("");
+                    else
+                        System.out.print("\t\t" + atribNom[i].getCountAtribut(j,k));
+                    
+                }
+                if (i==instance.numAttributes()-1)
+                        System.out.print(" " + countConclusion[j]);
+                System.out.println("");
+            }
+            System.out.println("");
         }
     }
     
@@ -154,15 +171,25 @@ public class NaiveBayesCode extends AbstractClassifier {
     }
     
     public void printModelProbability(Instances instance) {
-        System.out.println("Print Probability Model");
+        DecimalFormat df = new DecimalFormat("#.##");
+        int nConclus = instance.attribute(instance.numAttributes()-1).numValues();
+        
+        System.out.println("\n###\nPrint Probability Model");
+        System.out.println("This value was formatted with 2 decimal places");
+        System.out.println("");
+        System.out.print("\t\t");
+        
+        for (int k=0;k<nConclus;k++){
+            System.out.print("\t\t" + instance.attribute(instance.numAttributes()-1).value(k));
+        }
+        System.out.println("");
         
         // iterasi tiap atribut
         for (int i=0;i< instance.numAttributes()-1;i++){ 
             System.out.println((i+1) + ". " + instance.attribute(i).name());
-            
-            
             // iterasi tiap label dalam atribut
             for (int j=0;j<instance.attribute(i).numValues();j++){
+                
                 if ((j+1)<10)
                     System.out.print("00" + (j+1) + ". " + instance.attribute(i).value(j));
                 else if ((j+1)>=10 && j < 100)
@@ -172,7 +199,8 @@ public class NaiveBayesCode extends AbstractClassifier {
                 
                 // iterasi tiap kesimpulan
                 for (int k=0;k<instance.attribute(instance.numAttributes()-1).numValues();k++){
-                    System.out.print("\t\t" + atribNom[i].getAttribObjectType(j, k));
+                    double aa = (double) atribNom[i].getAttribObjectType(j, k);
+                    System.out.printf("\t\t" + df.format(aa));
                 }
                 System.out.println("");
             }
@@ -187,18 +215,12 @@ public class NaiveBayesCode extends AbstractClassifier {
         
         while (indeks<numInstance && !cek) {
             indeks++;
-//            System.out.print("indeksAtr : " + indexAtr + " ");
-//            System.out.println("indeks "+indeks + " values = " + values + " instancecopy: " + 
-//                    instanceCopy.attribute(indexAtr).value(indeks));
             if (String.valueOf(instanceCopy.attribute(indexAtr).value(indeks))
                     .equals(String.valueOf(values)))
                 cek = true;
         }
-//        System.out.println(indeks + "indeksssss = "+values);
         return indeks;
     }
-    
-    int jum=1;
     
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
@@ -210,24 +232,20 @@ public class NaiveBayesCode extends AbstractClassifier {
         //banyaknya atribut
         int num_attributes = instance.numAttributes();
         double inputs[] = new double[num_attributes];
-//        System.out.println(jum + ". dataset : "+instance.toString());
-        
-        jum++;
         
         for (int i=0;i<numClasses;i++){
             
             out[i]= probabConclusion[i];
-            
+//            System.out.print("\n" + maxIterasi +". out["+i+"] = ");
             for(int j=0; j<num_attributes-1; j++) {
                 int indexLabel = searchIndexLabel(j, instance.stringValue(j));
-//                System.out.println("indexLabel =  " + indexLabel);
                 out[i] *= (double)atribNom[j].getAttribObjectType(indexLabel, i);
-//                System.out.println("nilainya = " + atribNom[j].getAttribObjectType(indexLabel, i));
-                
+//                System.out.print(atribNom[j].getAttribObjectType(indexLabel, i) + "*");
             }
-//            System.out.println("out["+i+"] = "+out[i]);
+//            System.out.println("\nout["+i+"] = "+out[i]);
+//            System.out.println(instance.toString());
         }
-        
+//        maxIterasi++;
         return out;
     }
 
@@ -238,8 +256,10 @@ public class NaiveBayesCode extends AbstractClassifier {
         
         //banyaknya instance
         int nInstance = instance.numInstances();
+        
         //banyaknya jenis kesimpulan
         int nProbabConclusion = instance.attribute(instance.numAttributes()-1).numValues();        
+        
         //array untuk menyimpan nilai probabilitas dari konklusi.
         //misal T probabilitasnya berapa, F probabilitasnya berapa.
         probabConclusion = new float[nProbabConclusion];
@@ -247,9 +267,13 @@ public class NaiveBayesCode extends AbstractClassifier {
             probabConclusion[i] = (float) countConclusion[i] / (float) nInstance;
         }
         
-        Evaluation eval = new Evaluation(instance);
-        eval.evaluateModel(this, instance);
-        
+//        Evaluation eval = new Evaluation(instance);
+//        eval.evaluateModel(this, instance);
+//        System.out.println("iterasi ke-" + maxIterasi);
+//        if(eval.errorRate() > this.minErrorRate && maxIterasi < 2) {
+//            maxIterasi++;
+//            this.buildClassifier(instance);
+//        }
     }
     
     /**
@@ -277,7 +301,7 @@ public class NaiveBayesCode extends AbstractClassifier {
         
         
         printModelProbability(instance);
-//        printFrequencyEachValueOfAtributByIndex(instance, 3, 0);
+//        printFrequencyEachValueOfAtributByIndex(instance);
         System.out.println("");
     }
     

@@ -10,18 +10,32 @@ package NaiveBayesPckge;
  * @author Ghifari
  */
 public class AttributeNominal {
+    // Untuk menyimpan nilai probabilitas dari kelas yang diuji
     private Object atribut[][];
+    // Untuk menyimpan banyaknya data kelas yang diuji
     private int countAtribut[][];
     
+    /**
+     * Make Object Biasa
+     */
     public AttributeNominal() {
     
     }
     
+    /**
+     * Membuat object dengan parameter
+     * @param nDataDifferent yaitu label (isinya atribut)
+     * @param nConclusion yaitu banyaknya konklusi. Misal ada T dan F. berati ada 2
+     */
     public AttributeNominal(int nDataDifferent, int nConclusion) {
         atribut = new Object[nDataDifferent][nConclusion];
         countAtribut = new int[nDataDifferent][nConclusion];
     }
     
+    /**
+     * Mengembalikan atribut dalam bentuk array
+     * @return atribut
+     */
     public Object[] getAttribArrayObjectType(){
         return atribut;
     }
