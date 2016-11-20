@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package tubes2ai;
+package NaiveBayesPckge;
 
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils;
