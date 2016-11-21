@@ -5,11 +5,13 @@
  */
 package NaiveBayesPckge;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Ghifari
  */
-public class AttributeNominal {
+public class AttributeNominal implements Serializable{
     // Untuk menyimpan nilai probabilitas dari kelas yang diuji
     private Object atribut[][];
     // Untuk menyimpan banyaknya data kelas yang diuji

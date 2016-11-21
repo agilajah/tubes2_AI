@@ -6,11 +6,13 @@
 package NaiveBayesPckge;
 
 import java.text.DecimalFormat;
-import java.util.Random;
+import java.util.ArrayList;
 import java.util.Scanner;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
-import weka.classifiers.trees.J48;
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.Discretize;
@@ -22,23 +24,25 @@ import weka.filters.unsupervised.attribute.NumericToNominal;
  * @author Ghifari
  */
 public class NaiveBayesMain {    
-    static J48 tree;
+    private static Classifier naive;
+    private static DecimalFormat df = new DecimalFormat("#.####");
         
     public static Instances useFilterDiscritize(Instances dataSet) throws Exception {
         //set options
         String[] optionsFilter = new String[4];
         //choose the number of intervals, e.g 2:
         optionsFilter[0] = "-B";
-        optionsFilter[1] = "5";
+        optionsFilter[1] = "6";
         //choose the range of attributes on which to apply the filter:
         optionsFilter[2] = "-R";
         optionsFilter[3] = "first-last";
-
+        System.out.println("> Filtering dataset using Discretize\n");
         //Apply Discretization
         Discretize discretize = new Discretize();
         discretize.setOptions(optionsFilter);
         discretize.setInputFormat(dataSet);
         Instances newDataTemp = Filter.useFilter(dataSet, discretize);
+        
         return newDataTemp;
     }
     
@@ -70,37 +74,83 @@ public class NaiveBayesMain {
         return newInstance;
     }
     
-    public static void saveModel(NaiveBayesCode naives, String filename) throws Exception {
-        weka.core.SerializationHelper.write("D:/ITB/semester 5/AI/tugas/tubes2/savemodel" + filename + ".nbayes", naives);
+    public static void saveModel(String filename) throws Exception {
+        weka.core.SerializationHelper.write("D:/ITB/" + filename + ".nb", naive);
     }
 
 
-    public static Classifier loadModel(String filename) throws Exception {
-        Classifier loader = (J48) weka.core.SerializationHelper.read("/home/agilajah/IdeaProjects/tucil2_AI/out/" + filename + ".model");
+    public static NaiveBayesCode loadModel(String filename) throws Exception {
+        NaiveBayesCode loader = (NaiveBayesCode) weka.core.SerializationHelper.read("D:/ITB/" + filename + ".nb");
 
         return loader;
     }    
     
+    public static void addNewInstance(Instances instances) throws Exception {
+        Scanner scan = new Scanner(System.in);
+        ArrayList<Attribute> atts = new ArrayList<Attribute>();
+        ArrayList<String> classVal = new ArrayList<String>();
+        int nConclus = instances.attribute(instances.numAttributes()-1).numValues();
+        int numAttribut = instances.numAttributes();
+        
+        //buat nambah kesimpulan. Misal T dan F
+        for (int i=0;i<nConclus;i++){ 
+            classVal.add(instances.attribute(instances.numAttributes()-1).value(i));
+        }
+        
+        //buat nambahin attribut
+        for (int i=0;i<numAttribut-1;i++){ 
+            atts.add(new Attribute(instances.attribute(i).name()));
+        }
+        atts.add(new Attribute(instances.attribute(numAttribut-1).name(),classVal));
+
+        double[] attValues = new double[numAttribut];
+        System.out.print("Masukkan nilai : ");
+        for (int i=0; i < numAttribut-1;i++) {
+            attValues[i] = scan.nextDouble();
+        }
+        Discretize discretize = new Discretize();
+        String s = scan.nextLine();
+
+        Instance instance = new DenseInstance(1.0, attValues);
+
+
+        instance.setDataset(instances);
+        
+        discretize.setInputFormat(instances);
+        discretize.input(instance);
+        
+        int classify1 = (int) naive.classifyInstance(instance);
+        System.out.print("Prediction Class : ");
+        System.out.println(classVal.get(classify1));
+    }
+    
+    public static void printEvaluation(Instances instance) throws Exception {
+        Evaluation eval = new Evaluation(instance);
+        eval.evaluateModel(naive, instance);
+
+        System.out.println(eval.toSummaryString());		// Summary of Training
+        System.out.println(eval.toMatrixString());
+
+        double errorRates = eval.incorrect() / eval.numInstances() * 100;
+        double accuracy = eval.correct() / eval.numInstances() * 100;
+
+        System.out.println("Accuracy: " + df.format(accuracy) + " %");
+        System.out.println("Error rate: " + df.format(errorRates) + " %"); // Printing Training Mean root squared error
+    }
+    
     public static void main(String[] args) {
         Instances instance;
-        DecimalFormat df = new DecimalFormat("#.####");
         Scanner scan = new Scanner(System.in);
         InputNaiveBayes nb = new InputNaiveBayes();
-        NaiveBayesCode naive;
-        double minErrorRate = 0.2;
-        double errorRates;
-        double accuracy;
         String inputWeka;
-        String outputWeka;
-        boolean done = false;
         
         System.out.println("   Welcome to the Naive Bayes System");
         System.out.println("========================================");
         System.out.println("");
         
         System.out.print("Now input arff path file : ");
-//        inputWeka = scan.nextLine();
-        inputWeka = "zdata/mush.arff";
+        inputWeka = scan.nextLine();
+    //    inputWeka = "zdata/iris.arff";
         instance = nb.readFileUseWeka(inputWeka);
         
         try {
@@ -110,34 +160,34 @@ public class NaiveBayesMain {
             System.out.println("Problem when use filter : " + e);
         }
         
-        
-        naive = new NaiveBayesCode(instance.numAttributes(), minErrorRate);
-        try {
-            naive.buildClassifier(instance);
-            
-            Evaluation eval = new Evaluation(instance);
-            eval.evaluateModel(naive, instance);
-            
-            System.out.println(eval.toSummaryString());		// Summary of Training
-            System.out.println(eval.toMatrixString());
-            
-            errorRates = eval.incorrect() / eval.numInstances() * 100;
-            accuracy = eval.correct() / eval.numInstances() * 100;
-            
-            System.out.println("Accuracy: " + df.format(accuracy) + " %");
-            System.out.println("Error rate: " + df.format(errorRates) + " %"); // Printing Training Mean root squared error
-            done = true;
-        } catch (Exception e) {
-            System.out.println("Problem : " + e);
+        String choice = firstQuestion(instance);
+        if (choice.equals("2")) {
+            naive = new NaiveBayesCode(instance.numAttributes());
+            try {
+                naive.buildClassifier(instance);
+            } catch (Exception e) {
+                System.out.println("Problem when build classifier : " + e);
+            }
+
+            try {
+                printEvaluation(instance);
+                lastQuestion();
+            } catch (Exception e) {
+                System.out.println("Problem on evaluation : " + e);
+            }
         }
         
-        
-        
-//        printCoba(instance);
+        goodByeMessage();
+//        try {
+//            addNewInstance(instance);
+//        } catch (Exception ex) {
+//            Logger.getLogger(NaiveBayesMain.class.getName()).log(Level.SEVERE, null, ex);
+//        }
     }
     
-    public static void firstQuestion() {
+    public static String firstQuestion(Instances instance) {
         String choice;
+        String nameModel;
         Scanner scan = new Scanner(System.in);
         
         System.out.println("Do you want to load the mode or do you want to test the data ?");
@@ -146,24 +196,51 @@ public class NaiveBayesMain {
         System.out.print("Which one do you want : ");
         choice = scan.nextLine();
         
-        while (!choice.equals("1") || !choice.equals("2")) {
+        while (!choice.equals("1") && !choice.equals("2")) {
             System.out.println("   1. Load model");
             System.out.println("   2. Test the data");
             System.out.print("Type the number of your decision please : ");
             choice = scan.nextLine();
         }
         
-        
         if (choice.equals("1")) {
-            
+            System.out.print("type the name of your model : ");
+            nameModel = scan.next();
+            try {
+                naive = loadModel(nameModel);
+                System.out.println( "        ,-\"\"-.\n" +
+                                    "       :======:\n" +
+                                    "       :======;\n" +
+                                    "        `-.,-'\n" +
+                                    "          ||\n" +
+                                    "        _,''--.    _____\n" +
+                                    "       (/ __   `._|\n" +
+                                    "      ((_/_)\\     |\n" +
+                                    "       (____)`.___|\n" +
+                                    "        (___)____.|_____\n" +
+                                    "                     SSt");
+                System.out.println( "======================================");
+                System.out.println( "=============Model Loaded=============");
+                System.out.println( "======================================");
+            } catch (Exception ex) {
+                System.out.println("Problem when load the model : " + ex);
+            }
+            try {
+                printEvaluation(instance);
+            } catch (Exception ex) {
+                System.out.println("Problem when print the Evaluation at loadModel : " + ex);
+            }
         }
+        
+        return choice;
     }
     
-    public static void lastQuestion (NaiveBayesCode naive) {
+    public static void lastQuestion () {
         String outputWeka;
         Scanner scan = new Scanner(System.in);
         
-        
+        System.out.println("");
+        System.out.println("");
         System.out.print("Do you want to save the model ? (y/n) : ");
         outputWeka = scan.nextLine();
         while(!outputWeka.equals("y") &&
@@ -178,8 +255,8 @@ public class NaiveBayesMain {
             System.out.print("Input your filename here: ");
             String filename = scan.nextLine();
             try {
-                saveModel(naive, filename);
-                System.out.println( "                        _\n" +
+                saveModel(filename);
+                System.out.println( "             _\n" +
                                     "           /(|\n" +
                                     "          (  :\n" +
                                     "         __\\  \\  _____\n" +
@@ -198,6 +275,30 @@ public class NaiveBayesMain {
             System.out.println( "=============Not saving the model=============");
             System.out.println( "==============================================");
         }
+    }
+    
+    public static void goodByeMessage() {
+        System.out.println("");
+        System.out.println("");
+        System.out.println("");
+        System.out.println("================================================");
+        System.out.println("======== Thank you for using our system ========");
+        System.out.println("");
+        System.out.println( "                    |\\ /\\\n" +
+                            "    __              |,\\(_\\_\n" +
+                            "   ( (              |\\,`   `-^.\n" +
+                            "    \\ \\             :    `-'   )\n" +
+                            "     \\ \\             \\        ;\n" +
+                            "      \\ \\             `-.   ,'\n" +
+                            "       \\ \\ ____________,'  (\n" +
+                            "        ; '                ;\n" +
+                            "        \\                 /___,-.\n" +
+                            "         `,    ,_____|  ;'_____,'\n" +
+                            "       ,-\" \\  :      | :\n" +
+                            "      ( .-\" \\ `.__   | |\n" +
+                            "       \\__)  `.__,'  |__)  Byee byee ....");
+        System.out.println("================================================");
+        System.out.println("================================================");
     }
     
     public static void printCoba(Instances instance) {
