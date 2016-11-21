@@ -43,7 +43,7 @@ public class MyFFNN extends AbstractClassifier {
 	 * @param epoch				maximum epoch
 	 * @param minErrorRate		minimum error rate
 	 */
-	MyFFNN(int nInputNeuron, int nHiddenLayer, int nHiddenNeuron, int nOutputNeuron, double learningRate, int epoch, double minErrorRate) {
+	public MyFFNN(int nInputNeuron, int nHiddenLayer, int nHiddenNeuron, int nOutputNeuron, double learningRate, int epoch, double minErrorRate) {
 		this.learningRate = learningRate;
 		this.epoch = epoch;
 		this.minErrorRate = minErrorRate;
@@ -353,6 +353,8 @@ public class MyFFNN extends AbstractClassifier {
 	 * 
 	 * @param args
 	 */
+        
+        /*
 	public static void main(String args[]) {
 		// Read arff file
 		String arff = "ffnn/Team.arff";
@@ -376,9 +378,11 @@ public class MyFFNN extends AbstractClassifier {
 		int nHiddenNeuron = 15;
 		int nOutputNeuron = instances.numClasses();
 		double learningRate = 0.3;
-		int epoch = 5000;
+		int epoch = 10000;
 		double minErrorRate = 0.10;
 		
+                System.out.println("Have any model?");
+                
 		MyFFNN ffnn = new MyFFNN(nInputNeuron, nHiddenLayer, nHiddenNeuron, nOutputNeuron, learningRate, epoch, minErrorRate);
 		instances = ffnn.normalize(instances);
 		System.out.println(ffnn.toString());
@@ -398,5 +402,5 @@ public class MyFFNN extends AbstractClassifier {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}		
-	}
+	} */
 }
