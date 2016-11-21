@@ -140,6 +140,7 @@ public class NaiveBayesMain {
     
     public static void main(String[] args) {
         Instances instance;
+        String filterr ;
         Scanner scan = new Scanner(System.in);
         InputNaiveBayes nb = new InputNaiveBayes();
         String inputWeka;
@@ -154,8 +155,29 @@ public class NaiveBayesMain {
         instance = nb.readFileUseWeka(inputWeka);
         
         try {
-//            instance = useFilterNominalToNumeric(instance);
-            instance = useFilterDiscritize(instance);
+            System.out.println("Do you want to use filter ? Please choose one : ");
+                System.out.println("  1. Nominal To Numeric");
+                System.out.println("  2. Discretize");
+                System.out.println("  3. Don't use filter");
+                System.out.print("Your answer : ");
+                filterr = scan.nextLine();
+            while (!filterr.equals("1") &&
+                   !filterr.equals("2") &&
+                   !filterr.equals("3")){
+                System.out.println("Type the number please : ");
+                System.out.println("  1. Nominal To Numeric");
+                System.out.println("  2. Discretize");
+                System.out.println("  3. Don't use filter");
+                System.out.print("Your answer : ");
+                filterr = scan.nextLine();
+            }
+            if (filterr.equals("1")) 
+                instance = useFilterNominalToNumeric(instance);
+            else if (filterr.equals("2")) 
+                instance = useFilterDiscritize(instance);
+            else {
+                System.out.println("> Data is not filtered\n");
+            }
         } catch (Exception e) {
             System.out.println("Problem when use filter : " + e);
         }
