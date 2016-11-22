@@ -21,6 +21,10 @@ import java.util.Random;
 
 import ffnn.*;
 import NaiveBayesPckge.*;
+import static NaiveBayesPckge.NaiveBayesMain.useFilterDiscritize;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.Discretize;
+import weka.filters.unsupervised.attribute.NumericToNominal;
 
 /**
  *
@@ -35,6 +39,7 @@ public class tubes2_AI {
         static String existingmodels;
         static Instances dataSet;
         static Instances newDataSet;
+        static Instances dataTest;
         static Evaluation usedEvaluation;
         static String chosenClassifier= "FFNN(default)"; //default
         static int numChosenClassifier=0; //0 FFNN, 1 NB
@@ -50,59 +55,112 @@ public class tubes2_AI {
         static int nHiddenNeuron = 15;
         static int nOutputNeuron = 0;
         static double learningRate = 0.3;
-        static int epoch = 10000;
-        static double minErrorRate = 0.10;
+        static int epoch = 5000;
+        static double minErrorRate = 0.3;
 
-
+        
+        
+        public static void showStatus() {
+                    System.out.println();
+                    System.out.println();
+                    System.out.println("============================================================================================================");
+                    System.out.println("[File:" + fileactive + "]" + "    " + "[Filter: " + filteractive + "]"  + "    " + "[Validation Method:" + metode + "]" + "    " +
+                                        "[Model: " + existingmodels + "]" + "    " + "[Classifier: " + chosenClassifier + "]");
+                    System.out.println("============================================================================================================");
+                    System.out.println();
+        }
         public static void saveModel(String filename) throws Exception {
             if (numChosenClassifier==0) {
-                weka.core.SerializationHelper.write("/home/agilajah/Desktop/model/" + filename + ".model", ffnn);
+                weka.core.SerializationHelper.write("/home/agilajah/Desktop/model/" + filename + ".ffnn", ffnn);
             } else {
-                weka.core.SerializationHelper.write("/home/agilajah/Desktop/model/" + filename + ".model", NB);
+                weka.core.SerializationHelper.write("/home/agilajah/Desktop/model/" + filename + ".nb", NB);
             }
             
         }
 
 
         public static MyFFNN loadModelFFNN(String filename) throws Exception {
-                System.out.println("[File:" + fileactive + "]" + "[Filter: " + filteractive + "]" + "[Method:" + metode + "]");
-                System.out.println("[Model: " + existingmodels + "]" + "[Classifier: " + chosenClassifier + "]");
+                showStatus();
                 //FFNN
                 chosenClassifier = "FFNN";
                 numChosenClassifier = 0;
 
-                ffnn = (MyFFNN) weka.core.SerializationHelper.read("/home/agilajah/Desktop/model/" + filename + ".model");
+                ffnn = (MyFFNN) weka.core.SerializationHelper.read("/home/agilajah/Desktop/model/" + filename + ".ffnn");
 
                 return ffnn;
         }
         
         public static NaiveBayesCode loadModelNB(String filename) throws Exception {
-                System.out.println("[File:" + fileactive + "]" + "[Filter: " + filteractive + "]" + "[Method:" + metode + "]");
-                System.out.println("[Model: " + existingmodels + "]" + "[Classifier: " + chosenClassifier + "]");
-
+                showStatus();
                 //NB
 
                 chosenClassifier = "Naive Bayes";
                 numChosenClassifier = 1;
-
+                
+                NB = (NaiveBayesCode) weka.core.SerializationHelper.read("/home/agilajah/Desktop/model/" + filename + ".nb");
+ 
                 return NB;
         }
         
-        public static int trainingMethodInteractive() {
-               //create the scanner
-               Scanner terminalInput = new Scanner(System.in);
+        
+        public static Instances useFilterDiscretize(Instances dataSet) throws Exception {
+            filteractive = "Discretize";
+            //set options
+            String[] optionsFilter = new String[4];
+            //choose the number of intervals, e.g 2:
+            optionsFilter[0] = "-B";
+            optionsFilter[1] = "6";
+            //choose the range of attributes on which to apply the filter:
+            optionsFilter[2] = "-R";
+            optionsFilter[3] = "first-last";
+            System.out.println("> Filtering dataset using Discretize\n");
+            //Apply Discretization
+            Discretize discretize = new Discretize();
+            discretize.setOptions(optionsFilter);
+            discretize.setInputFormat(dataSet);
+            Instances newDataTemp = Filter.useFilter(dataSet, discretize);
 
-               System.out.println();
-               System.out.println("====================================");
-               System.out.println("[File:" + fileactive + "]" + "[Filter: " + filteractive + "]" + "[Method:" + metode + "]");
-               System.out.println("[Model: " + existingmodels + "]" + "[Classifier: " + chosenClassifier + "]");
-               System.out.println("====================================");
+            return newDataTemp;
+        }
+
+        public static Instances useFilterNominalToNumeric(Instances dataSet) throws Exception{
+            boolean isNumeric = false;
+            Instances newInstance = null;
+            filteractive = "NominalToNumeric";
+
+            // 0 = Numeric
+            // 1 = Nominal
+            for(int i=0; i<dataSet.numAttributes(); i++) {			
+                if((dataSet.attribute(i).type() == 0) || (dataSet.attribute(i).type() == 1)) {
+                    isNumeric = true;
+                }
+            }
+
+            if (isNumeric) {
+                System.out.println("> Filtering dataset using NumericToNominal\n");
+                NumericToNominal filter = new NumericToNominal();
+                try {
+                        filter.setInputFormat(dataSet);
+                        newInstance = Filter.useFilter(dataSet, filter);
+                        //System.out.println(newInstance);
+                        System.out.println("Data filtered");
+                } catch (Exception e) {
+                        System.out.println("Problem filtering instances\n");
+                }
+            }
+
+            return newInstance;
+        }
+        
+        public static int trainingMethodInteractive() {
+  
+               showStatus();
                System.out.println("Choose appropriate training method : ");
                System.out.println("1. 10 Folds Cross Validation");
                System.out.println("2. Full-Training");
-               String chooseMethods = terminalInput.nextLine();
+               String chooseMethods = terminalInputString();
                while (!chooseMethods.equals("1") && !chooseMethods.equals("2")) {
-                   chooseMethods = terminalInput.nextLine();
+                   chooseMethods = terminalInputString();
                    if (!chooseMethods.equals("1") && !chooseMethods.equals("2")) {
                        System.out.println("Choose correctly, please.");
                    }
@@ -146,57 +204,73 @@ public class tubes2_AI {
                 ft.evaluateModel(c, newDataSet);
                 return ft;
         }
+        
+        
+        
 
         public static void modelInteractive() throws Exception {
-
+             System.out.println("Input data test: ");
+            String namafile = terminalInputString();
+            System.out.println("filename: " + namafile);
+                    
+            try {
+			DataSource source = new DataSource("dataSet/" + namafile + ".arff");
+			dataTest = source.getDataSet();
+			if(dataTest.classIndex() == -1) {
+				dataTest.setClassIndex(dataTest.numAttributes() - 1);
+			}
+			System.out.println("Loaded instances: " + namafile + ".arff\n");
+		} catch (Exception  e) {
+			System.out.println("Problem loading instances: " + namafile + "\n");
+		}
             // check whether user have model or not
-            System.out.println();
-            System.out.println("====================================");
-            System.out.println("[File:" + fileactive + "]" + "[Filter: " + filteractive + "]" + "[Method:" + metode + "]");
-            System.out.println("[Model: " + existingmodels + "]" + "[Classifier: " + chosenClassifier + "]");
-            System.out.println("====================================");
+            showStatus();
             System.out.println("Wanna input your existing model? (Yes/No)");
             String modelChoose = terminalInputString();
             String tempChoose = modelChoose.toLowerCase();
+            System.out.println();
             System.out.println("What is your classifier type?");
             System.out.println("1. FFNN");
             System.out.println("2. Naive Bayes");
-            int classifierType = terminalInputInteger();
+            String classifierType = terminalInputString();
+            if (classifierType.equals("1")) {
+                    numChosenClassifier = 0;
+                    chosenClassifier = "FFNN";
+            } else {
+                numChosenClassifier = 1;
+                chosenClassifier = "Naive Bayes";
+                
+            }
             if (tempChoose.equals("yes") || tempChoose.equals("y")) {
                 System.out.println();
                 System.out.println("----------------------------------------------------------------");
                 System.out.println("|                       Model Loader                            ");
                 System.out.println("----------------------------------------------------------------");
                 System.out.println();
-                System.out.println();
-                System.out.println("[File:" + fileactive + "]" + "[Filter: " + filteractive + "]" + "[Method:" + metode + "]");
-                System.out.println("[Model: " + existingmodels + "]" + "[Classifier: " + chosenClassifier + "]");
-
+                
                 System.out.print("Input your model filename : ");
                 String modelFileName = terminalInputString();
                 
                 
-                if (classifierType == 1) {
-                    numChosenClassifier = 0;
+                if (classifierType.equals("1")) {
                     usedClassifier = (MyFFNN) loadModelFFNN(modelFileName);
                     loadData();
                     newDataSet = ffnn.normalize(newDataSet);
                     
                 } else {
-                    numChosenClassifier = 1;
                     usedClassifier = (NaiveBayesCode) loadModelNB(modelFileName);
                     loadData();
+                    newDataSet = useFilterDiscretize(newDataSet);
                 }
                 existingmodels = new String(modelFileName);
                 System.out.println("Model succesfully loaded.");
-                //loadData();
                 //filterInteractive();
                 System.out.println("Dataset loaded.");
 
                 if (trainingMethodInteractive() == 1) {
-                    usedEvaluation = crossValidation(newDataSet, usedClassifier);
+                    usedEvaluation = crossValidation(dataTest, usedClassifier);
                 } else
-                    usedEvaluation = full_training(newDataSet, usedClassifier);
+                    usedEvaluation = full_training(dataTest, usedClassifier);
 
             } else { // if user has no existing model
                 System.out.println();
@@ -205,8 +279,10 @@ public class tubes2_AI {
 
                 //building classifier model
                 if (numChosenClassifier == 0) {
+                    chosenClassifier = "FFNN";
                     usedClassifier = (MyFFNN) baseClassifier(dataSet);
                 } else {
+                    chosenClassifier = "Naive Bayes";
                     usedClassifier = (NaiveBayesCode) baseClassifier(dataSet);
                 }
                 
@@ -217,10 +293,7 @@ public class tubes2_AI {
                 System.out.println("Model successfully built.");
                 System.out.println();
                 System.out.println();
-                System.out.println("====================================");
-                System.out.println("[File:" + fileactive + "]" + "[Filter: " + filteractive + "]" + "[Method:" + metode + "]");
-                System.out.println("[Model: " + existingmodels + "]" + "[Classifier: " + chosenClassifier + "]");
-                System.out.println("====================================");
+                showStatus();
                 System.out.println("Want to save model? (Yes/No)");
 
                 String chooseSaveModel = terminalInputString();
@@ -239,10 +312,11 @@ public class tubes2_AI {
                 }
                 //asking user whether using filter or nah
                 //filterInteractive();
+                
                 if (trainingMethodInteractive() == 1) {
-                    usedEvaluation = crossValidation(newDataSet, usedClassifier);
+                    usedEvaluation = crossValidation(dataTest, usedClassifier);
                 } else
-                    usedEvaluation = full_training(newDataSet, usedClassifier);
+                    usedEvaluation = full_training(dataTest, usedClassifier);
 
             }
 
@@ -254,21 +328,17 @@ public class tubes2_AI {
         */
         public static Classifier baseClassifier(Instances dataSetTemp) throws Exception {
                     
-                    System.out.println();
-                    System.out.println("====================================");
-                    System.out.println("[File:" + fileactive + "]" + "[Filter: " + filteractive + "]" + "[Method:" + metode + "]");
-                    System.out.println("[Model: " + existingmodels + "]" + "[Classifier: " + chosenClassifier + "]");
-                    System.out.println("====================================");
-                    System.out.println();
+                    showStatus();
                     
                                   
                     if (numChosenClassifier==0) {
                         //aktivasi FFNN by default
                         nInputNeuron = dataSetTemp.numAttributes()-1;
                         nOutputNeuron = dataSetTemp.numClasses();
+                        loadData();
                         ffnn = new MyFFNN(nInputNeuron, nHiddenLayer, nHiddenNeuron, nOutputNeuron, learningRate, epoch, minErrorRate);
                         chosenClassifier = "FFNN"; //by default
-                        loadData();
+                        
                         newDataSet = ffnn.normalize(newDataSet);
                         return ffnn;
                         
@@ -277,6 +347,14 @@ public class tubes2_AI {
                         numChosenClassifier = 1;
                         chosenClassifier = "Naive Bayes";
                         loadData();
+                        NB = new NaiveBayesCode(newDataSet.numAttributes());
+                        try {
+                            //            newDataSet = useFilterNominalToNumeric(newDataSet);
+                            newDataSet = useFilterDiscritize(newDataSet);
+                        } catch (Exception e) {
+                                    System.out.println("Problem when use filter : " + e);
+                        }
+                        
                         
                         return NB;
                     }
@@ -364,8 +442,7 @@ public class tubes2_AI {
         
         public static void main(String args[]) throws Exception{
                 //status
-                System.out.println("[File:" + fileactive + "]" + "[Filter: " + filteractive + "]" + "[Method:" + metode + "]");
-                System.out.println("[Model: " + existingmodels + "]" + "[Classifier: " + chosenClassifier + "]");
+                showStatus();
                 System.out.println("Input dataset file name: ");
                 //read filename
                 String namafile = terminalInputString();
@@ -376,7 +453,6 @@ public class tubes2_AI {
 			dataSet = source.getDataSet();
 			if(dataSet.classIndex() == -1) {
 				dataSet.setClassIndex(dataSet.numAttributes() - 1);
-//				instances.setClassIndex(0);
 			}
 			System.out.println("Loaded instances: " + namafile + ".arff\n");
 		} catch (Exception  e) {
@@ -389,9 +465,9 @@ public class tubes2_AI {
 		try {
 			usedClassifier.buildClassifier(newDataSet);
 			
-			Evaluation eval = new Evaluation(newDataSet);			
-			eval.evaluateModel(usedClassifier, newDataSet);
-			
+			Evaluation eval = new Evaluation(dataTest);			
+			eval.evaluateModel(usedClassifier, dataTest);
+			showStatus();
 			System.out.println(eval.toSummaryString());		// Summary of Training
 			System.out.println(eval.toMatrixString());
 			
