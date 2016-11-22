@@ -24,8 +24,10 @@ import weka.filters.unsupervised.attribute.NumericToNominal;
  * @author Ghifari
  */
 public class NaiveBayesMain {    
-    private static Classifier naive;
+    private static NaiveBayesCode naive;
+    
     private static DecimalFormat df = new DecimalFormat("#.####");
+    
         
     public static Instances useFilterDiscritize(Instances dataSet) throws Exception {
         //set options
@@ -140,6 +142,7 @@ public class NaiveBayesMain {
     
     public static void main(String[] args) {
         Instances instance;
+        Instances instanceTest;
         String filterr ;
         Scanner scan = new Scanner(System.in);
         InputNaiveBayes nb = new InputNaiveBayes();
@@ -149,11 +152,16 @@ public class NaiveBayesMain {
         System.out.println("========================================");
         System.out.println("");
         
-        System.out.print("Now input arff path file : ");
+        System.out.print("Now input Train .arff path file : ");
         inputWeka = scan.nextLine();
+        System.out.print("Now input Test .arff path file : ");
+        String inputTest = scan.nextLine();
     //    inputWeka = "zdata/iris.arff";
-        instance = nb.readFileUseWeka(inputWeka);
+//        String inputTest = "tes/student-mat-test.arff";
         
+        
+        instance = nb.readFileUseWeka(inputWeka);
+        instanceTest = nb.readFileUseWeka(inputTest);
         try {
             System.out.println("Do you want to use filter ? Please choose one : ");
                 System.out.println("  1. Nominal To Numeric");
@@ -171,10 +179,14 @@ public class NaiveBayesMain {
                 System.out.print("Your answer : ");
                 filterr = scan.nextLine();
             }
-            if (filterr.equals("1")) 
+            if (filterr.equals("1")) {
                 instance = useFilterNominalToNumeric(instance);
-            else if (filterr.equals("2")) 
+                instanceTest = useFilterNominalToNumeric(instanceTest);
+            }
+            else if (filterr.equals("2")) {
                 instance = useFilterDiscritize(instance);
+                instanceTest = useFilterDiscritize(instanceTest);
+            }
             else {
                 System.out.println("> Data is not filtered\n");
             }
@@ -186,7 +198,8 @@ public class NaiveBayesMain {
         if (choice.equals("2")) {
             naive = new NaiveBayesCode(instance.numAttributes());
             try {
-                naive.buildClassifier(instance);
+                naive.run(instance);
+                naive.buildClassifier(instanceTest);
             } catch (Exception e) {
                 System.out.println("Problem when build classifier : " + e);
             }

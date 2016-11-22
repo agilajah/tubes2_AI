@@ -284,20 +284,9 @@ public class NaiveBayesCode extends AbstractClassifier implements Serializable {
     
     @Override
     public void buildClassifier(Instances instance) throws Exception {
-        run(instance);
+        //run(instance);
         
-        //banyaknya instance
-        int nInstance = instance.numInstances();
         
-        //banyaknya jenis kesimpulan
-        int nProbabConclusion = instance.attribute(instance.numAttributes()-1).numValues();        
-        
-        //array untuk menyimpan nilai probabilitas dari konklusi.
-        //misal T probabilitasnya berapa, F probabilitasnya berapa.
-        probabConclusion = new float[nProbabConclusion];
-        for(int i=0;i<nProbabConclusion;i++){
-            probabConclusion[i] = (float) countConclusion[i] / (float) nInstance;
-        }
         
 //        Evaluation eval = new Evaluation(instance);
 //        eval.evaluateModel(this, instance);
@@ -331,6 +320,19 @@ public class NaiveBayesCode extends AbstractClassifier implements Serializable {
         // melakukan setting atau mengisi model probabilitas
         setModelProbability(instance);
         
+        
+        //banyaknya instance
+        int nInstance = instance.numInstances();
+        
+        //banyaknya jenis kesimpulan
+        int nProbabConclusion = instance.attribute(instance.numAttributes()-1).numValues();        
+        
+        //array untuk menyimpan nilai probabilitas dari konklusi.
+        //misal T probabilitasnya berapa, F probabilitasnya berapa.
+        probabConclusion = new float[nProbabConclusion];
+        for(int i=0;i<nProbabConclusion;i++){
+            probabConclusion[i] = (float) countConclusion[i] / (float) nInstance;
+        }
         
 //        printModelProbability(instance);
 //        printFrequencyEachValueOfAtributByIndex(instance);
