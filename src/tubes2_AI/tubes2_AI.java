@@ -12,9 +12,12 @@ import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 import weka.classifiers.Evaluation;
 import weka.classifiers.Classifier;
-//import weka.core.Attribute;
-import java.io.Serializable;
+import weka.filters.unsupervised.attribute.NominalToBinary;
+import weka.core.Attribute;
+import weka.filters.Filter;
 
+import java.io.Serializable;
+import java.util.Set;
 import java.util.Scanner;
 import java.util.Random;
 //import java.util.ArrayList;
@@ -49,14 +52,16 @@ public class tubes2_AI {
 
 
         //for FFNN
+        
+        private static NominalToBinary nominalToBinaryFilter; 
 
         static int nInputNeuron = 0;
         static int nHiddenLayer = 1;
-        static int nHiddenNeuron = 15;
+        static int nHiddenNeuron = 35;
         static int nOutputNeuron = 0;
-        static double learningRate = 0.3;
-        static int epoch = 5000;
-        static double minErrorRate = 0.3;
+        static double learningRate = 0.01;
+        static int epoch = 155000;
+        static double minErrorRate = 0.4;
 
         
         
@@ -206,8 +211,46 @@ public class tubes2_AI {
         }
         
         
-        
+        /**
+        * Checks {@link Instances} data if attributes (all but the label attributes)
+        * are numeric or nominal. Nominal attributes are transformed to binary by use of
+        * {@link NominalToBinary} filter.
+        *
+        * @param dataSet instances data to be checked
+        * @param inputAttributes input/feature attributes which format need to be checked
+        * @return data set if it passed checks; otherwise <code>null</code>
+        */
+       private Instances applyNominaltoBinaryFiltert(Instances dataSet, Set<Attribute> inputAttributes) {
 
+           StringBuilder nominalAttrRange = new StringBuilder();
+           String rangeDelimiter = ",";
+           for (Attribute attribute : inputAttributes) {
+               if (attribute.isNumeric() == false) {
+                   if (attribute.isNominal()) {
+                       nominalAttrRange.append((attribute.index() + 1) + rangeDelimiter);
+                   } else {
+                       // fail check if any other attribute type than nominal or numeric is used
+                       return null;
+                   }
+               }
+           }
+
+           // convert any nominal attributes to binary
+           if (nominalAttrRange.length() > 0) {
+               nominalAttrRange.deleteCharAt(nominalAttrRange.lastIndexOf(rangeDelimiter));
+               try {
+                   nominalToBinaryFilter = new NominalToBinary();
+                   nominalToBinaryFilter.setAttributeIndices(nominalAttrRange.toString());
+                   nominalToBinaryFilter.setInputFormat(dataSet);
+                   dataSet = Filter.useFilter(dataSet, nominalToBinaryFilter);
+               } catch (Exception exception) {
+                   nominalToBinaryFilter = null;
+                   exception.printStackTrace();
+               }
+           }
+
+           return dataSet;
+       }
         public static void modelInteractive() throws Exception {
              System.out.println("Input data test: ");
             String namafile = terminalInputString();
@@ -314,9 +357,26 @@ public class tubes2_AI {
                 //filterInteractive();
                 
                 if (trainingMethodInteractive() == 1) {
+                    if (numChosenClassifier==0) {
+
+                       //filtering the datatest
+                       //dataTest = applyNominaltoBinaryFilter(dataTest);
+                       dataTest=ffnn.normalize(dataTest); 
+                    } else {
+                        dataTest=useFilterDiscretize(dataTest);
+                    }
+                    
                     usedEvaluation = crossValidation(dataTest, usedClassifier);
-                } else
+                } else {
+                    if (numChosenClassifier==0) {
+                       dataTest=ffnn.normalize(dataTest); 
+                    } else {
+                        dataTest=useFilterDiscretize(dataTest);
+                    }
                     usedEvaluation = full_training(dataTest, usedClassifier);
+                }
+                    
+                    
 
             }
 
@@ -338,7 +398,8 @@ public class tubes2_AI {
                         loadData();
                         ffnn = new MyFFNN(nInputNeuron, nHiddenLayer, nHiddenNeuron, nOutputNeuron, learningRate, epoch, minErrorRate);
                         chosenClassifier = "FFNN"; //by default
-                        
+                        //applying filter
+                        //newDataSet = applyNominaltoBinaryFilter(newDataSet);
                         newDataSet = ffnn.normalize(newDataSet);
                         return ffnn;
                         
