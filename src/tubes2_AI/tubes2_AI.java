@@ -59,7 +59,7 @@ public class tubes2_AI {
         static int nHiddenLayer = 1;
         static int nHiddenNeuron = 35;
         static int nOutputNeuron = 0;
-        static double learningRate = 0.01;
+        static double learningRate = 0.1;
         static int epoch = 155000;
         static double minErrorRate = 0.4;
 
@@ -220,34 +220,17 @@ public class tubes2_AI {
         * @param inputAttributes input/feature attributes which format need to be checked
         * @return data set if it passed checks; otherwise <code>null</code>
         */
-       private Instances applyNominaltoBinaryFiltert(Instances dataSet, Set<Attribute> inputAttributes) {
-
-           StringBuilder nominalAttrRange = new StringBuilder();
-           String rangeDelimiter = ",";
-           for (Attribute attribute : inputAttributes) {
-               if (attribute.isNumeric() == false) {
-                   if (attribute.isNominal()) {
-                       nominalAttrRange.append((attribute.index() + 1) + rangeDelimiter);
-                   } else {
-                       // fail check if any other attribute type than nominal or numeric is used
-                       return null;
-                   }
-               }
-           }
-
-           // convert any nominal attributes to binary
-           if (nominalAttrRange.length() > 0) {
-               nominalAttrRange.deleteCharAt(nominalAttrRange.lastIndexOf(rangeDelimiter));
+       public static Instances applyNominaltoBinaryFilter(Instances dataSet) {
                try {
                    nominalToBinaryFilter = new NominalToBinary();
-                   nominalToBinaryFilter.setAttributeIndices(nominalAttrRange.toString());
+                   //nominalToBinaryFilter.
                    nominalToBinaryFilter.setInputFormat(dataSet);
                    dataSet = Filter.useFilter(dataSet, nominalToBinaryFilter);
                } catch (Exception exception) {
                    nominalToBinaryFilter = null;
                    exception.printStackTrace();
                }
-           }
+           
 
            return dataSet;
        }
@@ -360,7 +343,7 @@ public class tubes2_AI {
                     if (numChosenClassifier==0) {
 
                        //filtering the datatest
-                       //dataTest = applyNominaltoBinaryFilter(dataTest);
+                       dataTest = applyNominaltoBinaryFilter(dataTest);
                        dataTest=ffnn.normalize(dataTest); 
                     } else {
                         dataTest=useFilterDiscretize(dataTest);
@@ -399,7 +382,7 @@ public class tubes2_AI {
                         ffnn = new MyFFNN(nInputNeuron, nHiddenLayer, nHiddenNeuron, nOutputNeuron, learningRate, epoch, minErrorRate);
                         chosenClassifier = "FFNN"; //by default
                         //applying filter
-                        //newDataSet = applyNominaltoBinaryFilter(newDataSet);
+                        newDataSet = applyNominaltoBinaryFilter(newDataSet);
                         newDataSet = ffnn.normalize(newDataSet);
                         return ffnn;
                         
