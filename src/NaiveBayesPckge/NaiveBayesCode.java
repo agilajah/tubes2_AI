@@ -254,8 +254,11 @@ public class NaiveBayesCode extends AbstractClassifier implements Serializable {
         return classify;        
     }
     
+    //static long jum = 1;
+    
     @Override
     public double[] distributionForInstance(Instance instance) throws Exception {
+        
         // banyaknya kesimpulan. Misal T dan F berati ada 2
         int numClasses = instance.numClasses();
         double[] out = new double[numClasses];
@@ -340,3 +343,4 @@ public class NaiveBayesCode extends AbstractClassifier implements Serializable {
     }
     
 }
+//tes
